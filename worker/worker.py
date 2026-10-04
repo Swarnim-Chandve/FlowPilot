@@ -6,7 +6,7 @@ import signal
 import sys
 import redis
 from datetime import datetime
-from worker.actions import scrape_web_action, gemini_ai_action, send_email_action, send_slack_action, webhook_dispatch_action
+from worker.actions import scrape_web_action, gemini_ai_action, send_email_action, send_slack_action, send_discord_action, webhook_dispatch_action
 from backend.database import SessionLocal, WorkflowRunModel
 
 REDIS_URL = os.getenv("VALKEY_URL") or os.getenv("REDIS_URL")
@@ -65,6 +65,9 @@ async def execute_workflow_steps(task_data):
         elif dest_type == "slack":
             slack_url = payload.get("slack_url", "")
             dispatch_status = await send_slack_action(slack_url, ai_summary)
+        elif dest_type == "discord":
+            discord_url = payload.get("discord_url", "")
+            dispatch_status = await send_discord_action(discord_url, ai_summary)
         elif dest_type in ["webhook_out", "sheets"]:
             dispatch_status = await webhook_dispatch_action(payload.get("destination_url", ""), {"summary": ai_summary})
 

@@ -84,6 +84,9 @@ export default function App() {
   const [promptText, setPromptText] = useState("Summarize top 2 trending stories and key sentiment.");
   const [recipientEmail, setRecipientEmail] = useState("recoverybro23@gmail.com");
   const [emailSubject, setEmailSubject] = useState("[FlowPilot AI Alert] Autonomous Execution Report");
+  const [slackUrl, setSlackUrl] = useState("");
+  const [discordUrl, setDiscordUrl] = useState("");
+  const [destinationUrl, setDestinationUrl] = useState("");
 
   const fetchDbWorkflows = async () => {
     try {
@@ -263,6 +266,9 @@ export default function App() {
           destination_type: nodes.find(n => ["email", "slack", "sheets", "discord", "webhook_out"].includes(n.data?.actionType))?.data?.actionType || "email",
           recipient_email: recipientEmail,
           email_subject: emailSubject,
+          slack_url: slackUrl,
+          discord_url: discordUrl,
+          destination_url: destinationUrl,
         }),
       });
       const data = await res.json();

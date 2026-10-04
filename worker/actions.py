@@ -173,3 +173,23 @@ async def webhook_dispatch_action(target_url: str, data: dict) -> dict:
             return {"status": "DELIVERED" if res.status_code < 400 else "FAILED"}
         except Exception as e:
             return {"status": "FAILED", "error": str(e)}
+
+async def send_discord_action(webhook_url: str, message: str) -> dict:
+    if not webhook_url or "abcdef" in webhook_url:
+        print("[DISCORD NOTICE] Mock Discord webhook triggered.")
+        return {"status": "SIMULATED", "message": "Discord alert formatted with rich embed."}
+    
+    payload = {
+        "embeds": [{
+            "title": "⚡ FlowPilot AI Autonomous Digest",
+            "description": message[:4000],
+            "color": 16345110,
+            "footer": {"text": "Dispatched via FlowPilot Distributed Engine"}
+        }]
+    }
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            res = await client.post(webhook_url, json=payload)
+            return {"status": "DELIVERED" if res.status_code < 400 else "FAILED"}
+        except Exception as e:
+            return {"status": "FAILED", "error": str(e)}
