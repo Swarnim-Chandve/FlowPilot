@@ -20,6 +20,9 @@ import { WebhookModal } from "./components/WebhookModal";
 import { NodeConfigDrawer } from "./components/NodeConfigDrawer";
 import { LiveResultDrawer } from "./components/LiveResultDrawer";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const HOOKS_URL = import.meta.env.VITE_HOOKS_URL || BACKEND_URL;
+
 const nodeTypes = {
   triggerNode: TriggerNode,
   actionNode: ActionNode,
@@ -82,7 +85,7 @@ export default function App() {
 
   const fetchDbWorkflows = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/v1/workflows");
+      const res = await fetch(`${BACKEND_URL}/api/v1/workflows`);
       if (res.ok) {
         const data = await res.json();
         setWorkflows(data);
@@ -94,7 +97,7 @@ export default function App() {
 
   const fetchDbRuns = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/v1/runs");
+      const res = await fetch(`${BACKEND_URL}/api/v1/runs`);
       if (res.ok) {
         const data = await res.json();
         setRuns(data);
@@ -136,9 +139,61 @@ export default function App() {
     setWorkflowTitle(tpl.title);
     setTargetUrl(tpl.targetUrl);
     setPromptText(tpl.promptText);
+
+    const destType = tpl.destination || "slack";
+    const templateNodes = [
+      {
+        id: "trigger",
+        type: "triggerNode",
+        position: { x: 350, y: 60 },
+        data: { triggerType: "webhook" },
+      },
+      {
+        id: "action-1",
+        type: "actionNode",
+        position: { x: 350, y: 220 },
+        data: { index: 1, actionType: "playwright", status: "READY" },
+      },
+      {
+        id: "action-2",
+        type: "actionNode",
+        position: { x: 350, y: 380 },
+        data: { index: 2, actionType: "gemini", status: "READY" },
+      },
+      {
+        id: "action-3",
+        type: "actionNode",
+        position: { x: 350, y: 540 },
+        data: { index: 3, actionType: destType, status: "READY" },
+      },
+    ];
+
+    const templateEdges = [
+      {
+        id: "e-trigger-action1",
+        source: "trigger",
+        target: "action-1",
+        style: { stroke: "#10b981", strokeDasharray: "4 4", strokeWidth: 2 },
+      },
+      {
+        id: "e-action1-action2",
+        source: "action-1",
+        target: "action-2",
+        style: { stroke: "#10b981", strokeDasharray: "4 4", strokeWidth: 2 },
+      },
+      {
+        id: "e-action2-action3",
+        source: "action-2",
+        target: "action-3",
+        style: { stroke: "#10b981", strokeDasharray: "4 4", strokeWidth: 2 },
+      },
+    ];
+
+    setNodes(templateNodes);
+    setEdges(templateEdges);
     setCurrentTab("canvas");
 
-    fetch("http://localhost:8000/api/v1/workflows", {
+    fetch(`${BACKEND_URL}/api/v1/workflows`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -150,6 +205,16 @@ export default function App() {
     }).then(() => fetchDbWorkflows()).catch(console.error);
   };
 
+
+  
+  const handleUpdateNode = (nodeId, dataUpdate) => {
+    setNodes((nds) =>
+      nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...dataUpdate } } : n))
+    );
+    setSelectedNode((prev) =>
+      prev && prev.id === nodeId ? { ...prev, data: { ...prev.data, ...dataUpdate } } : prev
+    );
+  };
 
   const handleDeleteNode = (nodeId) => {
     setNodes((nds) => nds.filter((n) => n.id !== nodeId));
@@ -186,7 +251,7 @@ export default function App() {
     );
 
     try {
-      const res = await fetch("http://localhost:5001/api/v1/webhook/" + activeWorkflowId, {
+      const res = await fetch(`${HOOKS_URL}/api/v1/webhook/${activeWorkflowId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -198,7 +263,7 @@ export default function App() {
       const data = await res.json();
       const taskId = data.task_id;
 
-      const eventSource = new EventSource("http://localhost:8000/api/v1/tasks/" + taskId + "/stream");
+      const eventSource = new EventSource(`${BACKEND_URL}/api/v1/tasks/${taskId}/stream`);
       eventSource.onmessage = (event) => {
         const payload = JSON.parse(event.data);
         if (payload.status === "COMPLETED") {
@@ -317,10 +382,13 @@ export default function App() {
             promptText={promptText}
             setPromptText={setPromptText}
             onDeleteNode={handleDeleteNode}
+            onUpdateNode={handleUpdateNode}
           />
 
           <WebhookModal
             isOpen={showWebhookModal}
+            hooksUrl={HOOKS_URL}
+            activeWorkflowId={activeWorkflowId}
             onClose={() => setShowWebhookModal(false)}
             targetUrl={targetUrl}
             promptText={promptText}

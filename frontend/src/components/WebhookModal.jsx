@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import { ShieldCheck, Copy, Check } from "lucide-react";
 
-export function WebhookModal({ isOpen, onClose, targetUrl, promptText }) {
+export function WebhookModal({ isOpen, onClose, targetUrl, promptText, hooksUrl = "http://localhost:5001", activeWorkflowId = "wf_market_intel" }) {
   const [copiedCurl, setCopiedCurl] = useState(false);
   if (!isOpen) return null;
 
-  const copyCurl = () => {
-    const curlCmd = `curl -X POST "http://localhost:5001/api/v1/webhook/wf_market_intel" \
-  -H "Content-Type: application/json" \
+  const endpoint = `${hooksUrl}/api/v1/webhook/${activeWorkflowId}`;
+  const curlCmd = `curl -X POST "${endpoint}" \\
+  -H "Content-Type: application/json" \\
   -d '{"target_url": "${targetUrl}", "prompt": "${promptText}"}'`;
+
+  const copyCurl = () => {
     navigator.clipboard.writeText(curlCmd);
     setCopiedCurl(true);
     setTimeout(() => setCopiedCurl(false), 2000);
@@ -30,8 +32,8 @@ export function WebhookModal({ isOpen, onClose, targetUrl, promptText }) {
         <div className="space-y-3 text-xs">
           <div>
             <label className="text-[11px] text-slate-500 font-semibold uppercase">Webhook Ingestion Endpoint</label>
-            <div className="mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg font-mono text-[11px] text-slate-700 select-all">
-              http://localhost:5001/api/v1/webhook/wf_market_intel
+            <div className="mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg font-mono text-[11px] text-slate-700 select-all break-all">
+              {endpoint}
             </div>
           </div>
 
@@ -45,8 +47,8 @@ export function WebhookModal({ isOpen, onClose, targetUrl, promptText }) {
           <div>
             <label className="text-[11px] text-slate-500 font-semibold uppercase">cURL for Postman / Terminal</label>
             <div className="mt-1 p-3 bg-slate-900 text-slate-200 rounded-lg font-mono text-[10px] overflow-x-auto leading-relaxed">
-              curl -X POST "http://localhost:5001/api/v1/webhook/wf_market_intel" \<br />
-              &nbsp;&nbsp;-H "Content-Type: application/json" \<br />
+              curl -X POST &quot;{endpoint}&quot; \<br />
+              &nbsp;&nbsp;-H &quot;Content-Type: application/json&quot; \<br />
               &nbsp;&nbsp;-d &apos;&#123;&quot;target_url&quot;: &quot;{targetUrl}&quot;, &quot;prompt&quot;: &quot;{promptText}&quot;&#125;&apos;
             </div>
           </div>
