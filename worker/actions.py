@@ -90,20 +90,42 @@ async def send_email_action(recipient: str, subject: str, content: str) -> dict:
             msg["From"] = smtp_email
             msg["To"] = recipient
 
+            import markdown
+            # Convert raw LLM markdown into clean semantic HTML
+            html_content = markdown.markdown(content, extensions=['extra', 'nl2br'])
+            
+            # Post-process for pristine Gmail typography and styling
+            html_content = html_content.replace('<h3>', '<h3 style="color: #0f172a; font-size: 16px; font-weight: 700; margin-top: 22px; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">')
+            html_content = html_content.replace('<h4>', '<h4 style="color: #ea580c; font-size: 14px; font-weight: 700; margin-top: 16px; margin-bottom: 6px;">')
+            html_content = html_content.replace('<strong>', '<strong style="color: #0f172a; font-weight: 600;">')
+            html_content = html_content.replace('<ul>', '<ul style="padding-left: 20px; margin: 10px 0;">')
+            html_content = html_content.replace('<li>', '<li style="margin-bottom: 6px; color: #334155; line-height: 1.6;">')
+            html_content = html_content.replace('<hr />', '<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />')
+            html_content = html_content.replace('<p>', '<p style="margin: 0 0 12px 0; color: #334155; line-height: 1.65; font-size: 14px;">')
+
             html_body = f"""
+            <!DOCTYPE html>
             <html>
-                <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="background: #0f172a; color: #ffffff; padding: 16px 24px; border-radius: 12px 12px 0 0;">
-                        <h2 style="margin: 0; font-size: 18px;">⚡ FlowPilot AI Autonomous Digest</h2>
-                    </div>
-                    <div style="border: 1px solid #e2e8f0; border-top: none; padding: 24px; border-radius: 0 0 12px 12px; background: #ffffff;">
-                        <h3 style="margin-top: 0; color: #0f172a;">AI Synthesis Summary</h3>
-                        <div style="background: #f8fafc; border-left: 4px solid #f97316; padding: 16px; border-radius: 4px; font-size: 14px; white-space: pre-wrap;">
-{content}
+                <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px;">
+                    <div style="max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+                        
+                        <!-- Header -->
+                        <div style="background: #0f172a; padding: 22px 28px; border-bottom: 3px solid #f97316;">
+                            <h2 style="margin: 0; color: #ffffff; font-size: 18px; font-weight: 700; letter-spacing: -0.02em;">⚡ FlowPilot AI Autonomous Digest</h2>
+                            <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px;">Autonomous Browser Extraction • Google Gemini Synthesis • Zero-Downtime Pipeline</p>
                         </div>
-                        <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
-                            Dispatched by FlowPilot Distributed Execution Engine | Sub-15ms Ingress
-                        </p>
+                        
+                        <!-- Body Content -->
+                        <div style="padding: 28px; background: #ffffff;">
+                            <div style="background: #fffaf5; border: 1px solid #ffedd5; border-radius: 10px; padding: 20px 22px; font-size: 14px;">
+                                {html_content}
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 28px; font-size: 11px; color: #64748b; text-align: center;">
+                            Dispatched by <strong>FlowPilot Distributed Engine</strong> • Latency: Sub-15ms Ingress
+                        </div>
                     </div>
                 </body>
             </html>
