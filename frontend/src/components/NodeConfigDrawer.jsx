@@ -19,7 +19,11 @@ export function NodeConfigDrawer({
   promptText,
   setPromptText,
   onDeleteNode,
-  onUpdateNode
+  onUpdateNode,
+  recipientEmail = "recoverybro23@gmail.com",
+  setRecipientEmail,
+  emailSubject = "[FlowPilot AI Alert] Autonomous Execution Report",
+  setEmailSubject
 }) {
   if (!selectedNode) return null;
 
@@ -151,15 +155,18 @@ export function NodeConfigDrawer({
               <label className="block text-[11px] font-semibold text-slate-600 mb-1">Recipient Email Address</label>
               <input
                 type="email"
-                defaultValue="intel@company.com"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail && setRecipientEmail(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-orange-500"
+                placeholder="you@gmail.com"
               />
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 mb-1">Email Subject Header</label>
               <input
                 type="text"
-                defaultValue="[FlowPilot AI Alert] Autonomous Execution Report"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject && setEmailSubject(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-orange-500"
               />
             </div>

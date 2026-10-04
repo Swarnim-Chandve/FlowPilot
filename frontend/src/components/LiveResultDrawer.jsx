@@ -96,6 +96,20 @@ export function LiveResultDrawer({ executionResult, onClose }) {
             {summary}
           </div>
         </div>
+
+        {res.dispatch_status && (
+          <div>
+            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Outbound Dispatch Telemetry</span>
+            <div className={`mt-1 p-2.5 rounded-lg border text-[11px] font-medium ${
+              res.dispatch_status.status === "DELIVERED" 
+                ? "bg-emerald-50 text-emerald-800 border-emerald-200" 
+                : "bg-blue-50 text-blue-800 border-blue-200"
+            }`}>
+              {res.dispatch_status.status === "DELIVERED" ? "✅ Live Delivered: " : "📬 Dispatch Ready: "}
+              {res.dispatch_status.message || `${res.dispatch_status.recipient} (${res.dispatch_status.provider || "SMTP"})`}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Footer with Resize Hint */}

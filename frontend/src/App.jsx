@@ -82,6 +82,8 @@ export default function App() {
   const [showWebhookModal, setShowWebhookModal] = useState(false);
   const [targetUrl, setTargetUrl] = useState("https://news.ycombinator.com");
   const [promptText, setPromptText] = useState("Summarize top 2 trending stories and key sentiment.");
+  const [recipientEmail, setRecipientEmail] = useState("recoverybro23@gmail.com");
+  const [emailSubject, setEmailSubject] = useState("[FlowPilot AI Alert] Autonomous Execution Report");
 
   const fetchDbWorkflows = async () => {
     try {
@@ -258,6 +260,9 @@ export default function App() {
           source: "ui_canvas_trigger",
           target_url: targetUrl,
           prompt: promptText,
+          destination_type: nodes.find(n => ["email", "slack", "sheets", "discord", "webhook_out"].includes(n.data?.actionType))?.data?.actionType || "email",
+          recipient_email: recipientEmail,
+          email_subject: emailSubject,
         }),
       });
       const data = await res.json();
@@ -383,6 +388,10 @@ export default function App() {
             setPromptText={setPromptText}
             onDeleteNode={handleDeleteNode}
             onUpdateNode={handleUpdateNode}
+            recipientEmail={recipientEmail}
+            setRecipientEmail={setRecipientEmail}
+            emailSubject={emailSubject}
+            setEmailSubject={setEmailSubject}
           />
 
           <WebhookModal

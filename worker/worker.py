@@ -1,3 +1,4 @@
+import os
 import json
 import time
 import asyncio
@@ -5,7 +6,7 @@ import signal
 import sys
 import redis
 from datetime import datetime
-from worker.actions import scrape_web_action, gemini_ai_action, webhook_dispatch_action
+from worker.actions import scrape_web_action, gemini_ai_action, send_email_action, send_slack_action, webhook_dispatch_action
 from backend.database import SessionLocal, WorkflowRunModel
 
 REDIS_URL = os.getenv("VALKEY_URL") or os.getenv("REDIS_URL")
@@ -51,7 +52,22 @@ async def execute_workflow_steps(task_data):
         # Step 2: Gemini 2.5 Flash Synthesis
         content = scrape_result.get("content", "")
         ai_result = await gemini_ai_action(ai_prompt, content)
-        
+        ai_summary = ai_result.get("ai_analysis", "")
+
+        # Step 3: Outbound Action (Email / Slack / Discord / Webhook)
+        dest_type = payload.get("destination_type") or "email"
+        recipient_email = payload.get("recipient_email") or "recoverybro23@gmail.com"
+        email_subj = payload.get("email_subject") or "[FlowPilot AI Alert] Autonomous Execution Report"
+
+        dispatch_status = {}
+        if dest_type == "email":
+            dispatch_status = await send_email_action(recipient_email, email_subj, ai_summary)
+        elif dest_type == "slack":
+            slack_url = payload.get("slack_url", "")
+            dispatch_status = await send_slack_action(slack_url, ai_summary)
+        elif dest_type in ["webhook_out", "sheets"]:
+            dispatch_status = await webhook_dispatch_action(payload.get("destination_url", ""), {"summary": ai_summary})
+
         elapsed_ms = int((time.time() - start_time) * 1000)
 
         final_output = {
@@ -60,7 +76,8 @@ async def execute_workflow_steps(task_data):
             "status": "COMPLETED",
             "execution_time_ms": elapsed_ms,
             "page_title": scrape_result.get("title", "Web Page"),
-            "ai_summary": ai_result.get("ai_analysis")
+            "ai_summary": ai_summary,
+            "dispatch_status": dispatch_status
         }
 
         # 1. Update in-memory Redis for fast SSE
