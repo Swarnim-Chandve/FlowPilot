@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # In-memory Task Broker
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    container_name: flowpilot-broker
+    ports:
+      - "6379:6379"
+    restart: always
+
+  # Webhook Ingestion Gateway (:5001)
+  hooks:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flowpilot-hooks
+    command: uvicorn hooks.app:app --host 0.0.0.0 --port 5001
+    ports:
+      - "5001:5001"
+    environment:
+      - REDIS_HOST=valkey
+      - REDIS_PORT=6379
+    depends_on:
+      - valkey
+    restart: always
+
+  # API Gateway & SSE Observability (:8000)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flowpilot-backend
+    command: uvicorn backend.app:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=valkey
+      - REDIS_PORT=6379
+      - DATABASE_URL=sqlite:////app/data/flowpilot.db
+    volumes:
+      - flowpilot-db-data:/app/data
+    depends_on:
+      - valkey
+    restart: always
+
+  # Distributed Worker Pool (Playwright + Gemini + DLQ)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flowpilot-worker
+    command: python -m worker.worker
+    environment:
+      - REDIS_HOST=valkey
+      - REDIS_PORT=6379
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DATABASE_URL=sqlite:////app/data/flowpilot.db
+    volumes:
+      - flowpilot-db-data:/app/data
+    depends_on:
+      - valkey
+      - backend
+    restart: always
+
+  # React 19 Flow Canvas UI (:5173)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: flowpilot-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+    depends_on:
+      - backend
+      - hooks
+    restart: always
+
+volumes:
+  flowpilot-db-data:
