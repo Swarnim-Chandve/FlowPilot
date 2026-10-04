@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+**/.env
+.env
+.env.*
+flowpilot.db
+node_modules/
+**/node_modules/
+dist/
+.DS_Store
+*.log
