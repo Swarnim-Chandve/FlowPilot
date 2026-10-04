@@ -1,7 +1,8 @@
 import os
 import json
 import asyncio
-from fastapi import FastAPI, HTTPException, Depends
+import uuid
+from fastapi import FastAPI, HTTPException, Depends, Request
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -22,9 +23,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+REDIS_URL = os.getenv("VALKEY_URL") or os.getenv("REDIS_URL")
+if REDIS_URL:
+    r = redis.from_url(REDIS_URL, decode_responses=True)
+else:
+    REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
 def get_db():
     db = SessionLocal()
@@ -194,3 +199,29 @@ async def stream_task_events(task_id: str):
             await asyncio.sleep(0.5)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@app.post("/api/v1/webhook/{workflow_id}")
+async def receive_webhook(workflow_id: str, request: Request):
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+
+    task_id = str(uuid.uuid4())
+    task_data = {
+        "task_id": task_id,
+        "workflow_id": workflow_id,
+        "payload": payload,
+        "status": "QUEUED"
+    }
+
+    r.lpush("flowpilot:task_queue", json.dumps(task_data))
+    r.set(f"flowpilot:task:{task_id}", json.dumps(task_data))
+
+    return {
+        "status": "success",
+        "message": "Task received and queued successfully",
+        "task_id": task_id,
+        "workflow_id": workflow_id
+    }

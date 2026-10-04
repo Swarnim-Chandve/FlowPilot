@@ -8,7 +8,13 @@ from datetime import datetime
 from worker.actions import scrape_web_action, gemini_ai_action, webhook_dispatch_action
 from backend.database import SessionLocal, WorkflowRunModel
 
-r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True, socket_timeout=None)
+REDIS_URL = os.getenv("VALKEY_URL") or os.getenv("REDIS_URL")
+if REDIS_URL:
+    r = redis.from_url(REDIS_URL, decode_responses=True, socket_timeout=None)
+else:
+    REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True, socket_timeout=None)
 QUEUE_NAME = "flowpilot:task_queue"
 DLQ_NAME = "flowpilot:dead_letter_queue"
 MAX_RETRIES = 3

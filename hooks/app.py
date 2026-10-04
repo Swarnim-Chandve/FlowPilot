@@ -15,9 +15,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+REDIS_URL = os.getenv("VALKEY_URL") or os.getenv("REDIS_URL")
+if REDIS_URL:
+    r = redis.from_url(REDIS_URL, decode_responses=True)
+else:
+    REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
 @app.get("/")
 def health():
