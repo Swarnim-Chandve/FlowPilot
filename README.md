@@ -72,7 +72,7 @@ FlowPilot decouples high-speed HTTP ingestion from heavy autonomous browser scra
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/Swarnim-Chandve/flowpilot-ai.git
+git clone https://github.com/Swarnim-Chandve/FlowPilot.git
 cd flowpilot-ai
 
 # 2. Configure keys
