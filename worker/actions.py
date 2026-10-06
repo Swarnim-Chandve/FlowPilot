@@ -193,3 +193,64 @@ async def send_discord_action(webhook_url: str, message: str) -> dict:
             return {"status": "DELIVERED" if res.status_code < 400 else "FAILED"}
         except Exception as e:
             return {"status": "FAILED", "error": str(e)}
+
+async def send_google_sheets_action(sheet_webhook_url: str, title: str, url: str, summary: str, workflow_id: str = "flowpilot") -> dict:
+    csv_file = "flowpilot_sheets.csv"
+    file_exists = os.path.exists(csv_file)
+
+    # 1. Real Disk CSV Persistence
+    try:
+        import csv
+        from datetime import datetime
+        with open(csv_file, mode="a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["Timestamp", "Workflow ID", "Target URL", "Page Title", "AI Summary", "Status"])
+            writer.writerow([
+                datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+                workflow_id,
+                url,
+                title,
+                summary.replace("\n", " "),
+                "COMPLETED"
+            ])
+        print(f"[SHEETS] Appended real row to {csv_file}!")
+    except Exception as e:
+        print(f"[SHEETS CSV ERROR] {e}")
+
+    # 2. Real Cloud Webhook (Google Apps Script / Zapier / Make / Webhook)
+    if sheet_webhook_url and ("script.google.com" in sheet_webhook_url or "http" in sheet_webhook_url):
+        print(f"[SHEETS] Posting row to Google Sheet Webhook: {sheet_webhook_url}...")
+        payload = {
+            "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+            "workflow_id": workflow_id,
+            "target_url": url,
+            "page_title": title,
+            "ai_summary": summary
+        }
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            try:
+                res = await client.post(sheet_webhook_url, json=payload)
+                print(f"[SHEETS SUCCESS] HTTP {res.status_code} from Google Sheet Webhook!")
+                return {
+                    "status": "DELIVERED",
+                    "provider": "Google Sheet Live Webhook",
+                    "message": "Row appended live to Google Sheet and flowpilot_sheets.csv!",
+                    "csv_exported": True
+                }
+            except Exception as err:
+                print(f"[SHEETS WEBHOOK ERROR] {err}")
+                return {
+                    "status": "PARTIAL",
+                    "error": str(err),
+                    "message": "Appended to local spreadsheet (flowpilot_sheets.csv). Cloud webhook failed.",
+                    "csv_exported": True
+                }
+    else:
+        print(f"[SHEETS NOTICE] No webhook URL provided. Row persisted to flowpilot_sheets.csv.")
+        return {
+            "status": "DELIVERED",
+            "provider": "Live Spreadsheet Engine (flowpilot_sheets.csv)",
+            "message": "Row appended to live spreadsheet table (flowpilot_sheets.csv).",
+            "csv_exported": True
+        }

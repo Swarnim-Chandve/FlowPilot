@@ -6,7 +6,7 @@ import signal
 import sys
 import redis
 from datetime import datetime
-from worker.actions import scrape_web_action, gemini_ai_action, send_email_action, send_slack_action, send_discord_action, webhook_dispatch_action
+from worker.actions import scrape_web_action, gemini_ai_action, send_email_action, send_slack_action, send_discord_action, send_google_sheets_action, webhook_dispatch_action
 from backend.database import SessionLocal, WorkflowRunModel
 
 REDIS_URL = os.getenv("VALKEY_URL") or os.getenv("REDIS_URL")
@@ -68,7 +68,16 @@ async def execute_workflow_steps(task_data):
         elif dest_type == "discord":
             discord_url = payload.get("discord_url", "")
             dispatch_status = await send_discord_action(discord_url, ai_summary)
-        elif dest_type in ["webhook_out", "sheets"]:
+        elif dest_type == "sheets":
+            sheet_url = payload.get("sheet_webhook_url") or payload.get("destination_url") or ""
+            dispatch_status = await send_google_sheets_action(
+                sheet_webhook_url=sheet_url,
+                title=scrape_result.get("title", "Web Page"),
+                url=target_url,
+                summary=ai_summary,
+                workflow_id=workflow_id
+            )
+        elif dest_type == "webhook_out":
             dispatch_status = await webhook_dispatch_action(payload.get("destination_url", ""), {"summary": ai_summary})
 
         elapsed_ms = int((time.time() - start_time) * 1000)

@@ -87,6 +87,7 @@ export default function App() {
   const [slackUrl, setSlackUrl] = useState("");
   const [discordUrl, setDiscordUrl] = useState("");
   const [destinationUrl, setDestinationUrl] = useState("");
+  const [sheetWebhookUrl, setSheetWebhookUrl] = useState("");
 
   const fetchDbWorkflows = async () => {
     try {
@@ -269,6 +270,7 @@ export default function App() {
           slack_url: slackUrl,
           discord_url: discordUrl,
           destination_url: destinationUrl,
+          sheet_webhook_url: sheetWebhookUrl,
         }),
       });
       const data = await res.json();
@@ -398,6 +400,15 @@ export default function App() {
             setRecipientEmail={setRecipientEmail}
             emailSubject={emailSubject}
             setEmailSubject={setEmailSubject}
+            sheetWebhookUrl={sheetWebhookUrl}
+            setSheetWebhookUrl={setSheetWebhookUrl}
+            slackUrl={slackUrl}
+            setSlackUrl={setSlackUrl}
+            discordUrl={discordUrl}
+            setDiscordUrl={setDiscordUrl}
+            destinationUrl={destinationUrl}
+            setDestinationUrl={setDestinationUrl}
+            backendUrl={BACKEND_URL}
           />
 
           <WebhookModal

@@ -108,6 +108,17 @@ export function LiveResultDrawer({ executionResult, onClose }) {
               {res.dispatch_status.status === "DELIVERED" ? "✅ Live Delivered: " : "📬 Dispatch Ready: "}
               {res.dispatch_status.message || `${res.dispatch_status.recipient} (${res.dispatch_status.provider || "SMTP"})`}
             </div>
+            {res.dispatch_status.csv_exported && (
+              <a
+                href="/api/v1/export/sheets.csv"
+                target="_blank"
+                rel="noreferrer"
+                download="flowpilot_sheets.csv"
+                className="mt-2 w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer"
+              >
+                📊 Open Live Spreadsheet Table (flowpilot_sheets.csv)
+              </a>
+            )}
           </div>
         )}
       </div>

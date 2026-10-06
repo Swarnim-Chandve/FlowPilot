@@ -5,7 +5,7 @@ import uuid
 from fastapi import FastAPI, HTTPException, Depends, Request
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel
 from typing import Optional, List, Any
 import redis
@@ -225,3 +225,10 @@ async def receive_webhook(workflow_id: str, request: Request):
         "task_id": task_id,
         "workflow_id": workflow_id
     }
+
+@app.get("/api/v1/export/sheets.csv")
+def export_sheets_csv():
+    csv_path = "flowpilot_sheets.csv"
+    if os.path.exists(csv_path):
+        return FileResponse(csv_path, media_type="text/csv", filename="flowpilot_sheets.csv")
+    raise HTTPException(status_code=404, detail="No spreadsheet data generated yet.")
