@@ -151,15 +151,75 @@ async def send_email_action(recipient: str, subject: str, content: str) -> dict:
         }
 
 
+def clean_slack_mrkdwn(text: str) -> str:
+    import re
+    # 1. Links: [text](url) -> <url|text>
+    text = re.sub(r'\[(.*?)\]\((https?://[^\)]+)\)', r'<\2|\1>', text)
+    # 2. Fix inline collapsed bullets like '...4*** **Source:**' or '...* **Metrics:**'
+    text = re.sub(r'\*\*\*\s*\*\*', r'*\n  • *', text)
+    text = re.sub(r'(?<=[^\n])\*\s*\*\*', r'\n  • *', text)
+    # 3. Clean headers (e.g. ### **Title** -> *Title*)
+    text = re.sub(r'^[#]+\s*\**(.*?)\**\s*$', r'\n*\1*\n', text, flags=re.MULTILINE)
+    # 4. Convert remaining markdown bold **word** -> *word*
+    text = re.sub(r'\*\*(.*?)\*\*', r'*\1*', text)
+    # 5. Remove dividers ---
+    text = re.sub(r'^\s*[-_]{3,}\s*$', '', text, flags=re.MULTILINE)
+    # 6. Replace remaining starting bullets with bullet symbol
+    text = re.sub(r'^\s*\*\s+', r'  • ', text, flags=re.MULTILINE)
+    # 7. Remove any trailing or orphaned double asterisks
+    text = text.replace('**', '').replace('***', '')
+    # 8. Clean excess blank lines
+    text = re.sub(r'\n{3,}', '\n\n', text).strip()
+    return text
+
+
 async def send_slack_action(webhook_url: str, message: str) -> dict:
     if not webhook_url or "XXXX" in webhook_url:
         print(f"[SLACK NOTICE] Mock Slack webhook triggered.")
         return {"status": "SIMULATED", "message": "Slack alert formatted and ready."}
-    
+
+    formatted = clean_slack_mrkdwn(message)
+
+    payload = {
+        "blocks": [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "⚡ FlowPilot AI Autonomous Briefing",
+                    "emoji": True
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": formatted[:2900]
+                }
+            },
+            {"type": "divider"},
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": "🤖 Dispatched via *FlowPilot Distributed Engine* • Sub-15ms Ingress"
+                    }
+                ]
+            }
+        ]
+    }
+
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
-            res = await client.post(webhook_url, json={"text": f"⚡ *FlowPilot AI Alert*:\n{message}"})
-            return {"status": "DELIVERED" if res.status_code == 200 else "FAILED"}
+            res = await client.post(webhook_url, json=payload)
+            if res.status_code == 200:
+                print("[SLACK SUCCESS] Clean Block Kit alert delivered to Slack!")
+                return {"status": "DELIVERED", "provider": "Slack Block Kit"}
+            else:
+                # Fallback to plain text if Block Kit hit any validation edge
+                fallback_res = await client.post(webhook_url, json={"text": f"⚡ *FlowPilot AI Alert*:\n\n{formatted}"})
+                return {"status": "DELIVERED" if fallback_res.status_code == 200 else "FAILED"}
         except Exception as e:
             return {"status": "FAILED", "error": str(e)}
 
