@@ -13,3 +13,4 @@ dist/
 *.pid
 flowpilot_sheets.csv
 logs_*.log
+dump.rdb
