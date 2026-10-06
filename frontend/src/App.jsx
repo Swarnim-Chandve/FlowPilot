@@ -87,7 +87,7 @@ export default function App() {
   const [slackUrl, setSlackUrl] = useState("");
   const [discordUrl, setDiscordUrl] = useState("");
   const [destinationUrl, setDestinationUrl] = useState("");
-  const [sheetWebhookUrl, setSheetWebhookUrl] = useState("");
+  const [sheetWebhookUrl, setSheetWebhookUrl] = useState("https://script.google.com/macros/s/AKfycby0NfQXMUknHZjped2NHsZubOVta6Dbdj8mXE4rcivI_ai8ZgCyc6qnWrtT6JcAmq0I/exec");
 
   const fetchDbWorkflows = async () => {
     try {

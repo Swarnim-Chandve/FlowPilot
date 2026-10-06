@@ -222,6 +222,7 @@ async def send_google_sheets_action(sheet_webhook_url: str, title: str, url: str
     if sheet_webhook_url and ("script.google.com" in sheet_webhook_url or "http" in sheet_webhook_url):
         print(f"[SHEETS] Posting row to Google Sheet Webhook: {sheet_webhook_url}...")
         payload = {
+            "secret": "flowpilot_secret_123",
             "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
             "workflow_id": workflow_id,
             "target_url": url,
