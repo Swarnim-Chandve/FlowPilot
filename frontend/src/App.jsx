@@ -84,10 +84,27 @@ export default function App() {
   const [promptText, setPromptText] = useState("Summarize top 2 trending stories and key sentiment.");
   const [recipientEmail, setRecipientEmail] = useState("recoverybro23@gmail.com");
   const [emailSubject, setEmailSubject] = useState("[FlowPilot AI Alert] Autonomous Execution Report");
-  const [slackUrl, setSlackUrl] = useState("");
-  const [discordUrl, setDiscordUrl] = useState("");
-  const [destinationUrl, setDestinationUrl] = useState("");
-  const [sheetWebhookUrl, setSheetWebhookUrl] = useState("https://script.google.com/macros/s/AKfycby0NfQXMUknHZjped2NHsZubOVta6Dbdj8mXE4rcivI_ai8ZgCyc6qnWrtT6JcAmq0I/exec");
+  const [slackUrl, setSlackUrlState] = useState(() => localStorage.getItem("fp_slack_url") || "");
+  const [discordUrl, setDiscordUrlState] = useState(() => localStorage.getItem("fp_discord_url") || "");
+  const [destinationUrl, setDestinationUrlState] = useState(() => localStorage.getItem("fp_dest_url") || "");
+  const [sheetWebhookUrl, setSheetWebhookUrlState] = useState(() => localStorage.getItem("fp_sheet_url") || "https://script.google.com/macros/s/AKfycby0NfQXMUknHZjped2NHsZubOVta6Dbdj8mXE4rcivI_ai8ZgCyc6qnWrtT6JcAmq0I/exec");
+
+  const setSlackUrl = (val) => {
+    setSlackUrlState(val);
+    localStorage.setItem("fp_slack_url", val);
+  };
+  const setDiscordUrl = (val) => {
+    setDiscordUrlState(val);
+    localStorage.setItem("fp_discord_url", val);
+  };
+  const setDestinationUrl = (val) => {
+    setDestinationUrlState(val);
+    localStorage.setItem("fp_dest_url", val);
+  };
+  const setSheetWebhookUrl = (val) => {
+    setSheetWebhookUrlState(val);
+    localStorage.setItem("fp_sheet_url", val);
+  };
 
   const fetchDbWorkflows = async () => {
     try {

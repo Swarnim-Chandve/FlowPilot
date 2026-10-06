@@ -63,13 +63,13 @@ async def execute_workflow_steps(task_data):
         if dest_type == "email":
             dispatch_status = await send_email_action(recipient_email, email_subj, ai_summary)
         elif dest_type == "slack":
-            slack_url = payload.get("slack_url", "")
+            slack_url = payload.get("slack_url") or os.getenv("SLACK_WEBHOOK_URL", "")
             dispatch_status = await send_slack_action(slack_url, ai_summary)
         elif dest_type == "discord":
             discord_url = payload.get("discord_url", "")
             dispatch_status = await send_discord_action(discord_url, ai_summary)
         elif dest_type == "sheets":
-            sheet_url = payload.get("sheet_webhook_url") or payload.get("destination_url") or ""
+            sheet_url = payload.get("sheet_webhook_url") or os.getenv("GOOGLE_SHEETS_WEBHOOK_URL") or payload.get("destination_url") or ""
             dispatch_status = await send_google_sheets_action(
                 sheet_webhook_url=sheet_url,
                 title=scrape_result.get("title", "Web Page"),
