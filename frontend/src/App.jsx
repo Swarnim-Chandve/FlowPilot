@@ -230,6 +230,63 @@ export default function App() {
 
 
   
+  const handleMoveNode = (nodeId, direction) => {
+    setNodes((prevNodes) => {
+      const trigger = prevNodes.find((n) => n.id === "trigger") || {
+        id: "trigger",
+        type: "triggerNode",
+        position: { x: 350, y: 60 },
+        data: { triggerType: "webhook" },
+      };
+      const actionNodes = prevNodes.filter((n) => n.type === "actionNode");
+      const idx = actionNodes.findIndex((n) => n.id === nodeId);
+      if (idx === -1) return prevNodes;
+
+      const newActions = [...actionNodes];
+      if (direction === "up" && idx > 0) {
+        const temp = newActions[idx];
+        newActions[idx] = newActions[idx - 1];
+        newActions[idx - 1] = temp;
+      } else if (direction === "down" && idx < newActions.length - 1) {
+        const temp = newActions[idx];
+        newActions[idx] = newActions[idx + 1];
+        newActions[idx + 1] = temp;
+      } else {
+        return prevNodes;
+      }
+
+      const updatedActions = newActions.map((act, i) => ({
+        ...act,
+        position: { x: 350, y: 220 + i * 160 },
+        data: {
+          ...act.data,
+          index: i + 1,
+        },
+      }));
+
+      setSelectedNode((curr) => {
+        if (!curr) return null;
+        const updated = updatedActions.find((a) => a.id === curr.id);
+        return updated ? { ...updated } : curr;
+      });
+
+      const newEdges = [];
+      let prevId = trigger.id;
+      for (const act of updatedActions) {
+        newEdges.push({
+          id: `e-${prevId}-${act.id}`,
+          source: prevId,
+          target: act.id,
+          style: { stroke: "#10b981", strokeDasharray: "4 4", strokeWidth: 2 },
+        });
+        prevId = act.id;
+      }
+      setEdges(newEdges);
+
+      return [trigger, ...updatedActions];
+    });
+  };
+
   const handleUpdateNode = (nodeId, dataUpdate) => {
     setNodes((nds) =>
       nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...dataUpdate } } : n))
@@ -240,28 +297,78 @@ export default function App() {
   };
 
   const handleDeleteNode = (nodeId) => {
-    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
-    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    setNodes((prevNodes) => {
+      const trigger = prevNodes.find((n) => n.id === "trigger") || {
+        id: "trigger",
+        type: "triggerNode",
+        position: { x: 350, y: 60 },
+        data: { triggerType: "webhook" },
+      };
+      const remainingActions = prevNodes.filter((n) => n.type === "actionNode" && n.id !== nodeId);
+      const updatedActions = remainingActions.map((act, i) => ({
+        ...act,
+        position: { x: 350, y: 220 + i * 160 },
+        data: {
+          ...act.data,
+          index: i + 1,
+        },
+      }));
+
+      const newEdges = [];
+      let prevId = trigger.id;
+      for (const act of updatedActions) {
+        newEdges.push({
+          id: `e-${prevId}-${act.id}`,
+          source: prevId,
+          target: act.id,
+          style: { stroke: "#10b981", strokeDasharray: "4 4", strokeWidth: 2 },
+        });
+        prevId = act.id;
+      }
+      setEdges(newEdges);
+
+      return [trigger, ...updatedActions];
+    });
+    if (selectedNode?.id === nodeId) {
+      setSelectedNode(null);
+    }
   };
 
-  const addAction = (type = "gemini") => {
-    const newId = "action-" + nodes.length;
-    const newY = 60 + nodes.length * 160;
-    const newNode = {
-      id: newId,
-      type: "actionNode",
-      position: { x: 350, y: newY },
-      data: { index: nodes.length, actionType: type, status: "READY" },
-    };
-    const newEdge = {
-      id: "e-" + nodes[nodes.length - 1].id + "-" + newId,
-      source: nodes[nodes.length - 1].id,
-      target: newId,
-      style: { stroke: "#10b981", strokeDasharray: "4 4", strokeWidth: 2 },
-      animated: isRunning,
-    };
-    setNodes((nds) => [...nds, newNode]);
-    setEdges((eds) => [...eds, newEdge]);
+  const addAction = (type = "slack") => {
+    setNodes((prevNodes) => {
+      const trigger = prevNodes.find((n) => n.id === "trigger") || {
+        id: "trigger",
+        type: "triggerNode",
+        position: { x: 350, y: 60 },
+        data: { triggerType: "webhook" },
+      };
+      const actionNodes = prevNodes.filter((n) => n.type === "actionNode");
+      const newIndex = actionNodes.length + 1;
+      const newId = "action-" + Date.now().toString().slice(-4);
+      const newNode = {
+        id: newId,
+        type: "actionNode",
+        position: { x: 350, y: 220 + actionNodes.length * 160 },
+        data: { index: newIndex, actionType: type, status: "READY" },
+      };
+      const updatedActions = [...actionNodes, newNode];
+
+      const newEdges = [];
+      let prevId = trigger.id;
+      for (const act of updatedActions) {
+        newEdges.push({
+          id: `e-${prevId}-${act.id}`,
+          source: prevId,
+          target: act.id,
+          style: { stroke: "#10b981", strokeDasharray: "4 4", strokeWidth: 2 },
+          animated: isRunning,
+        });
+        prevId = act.id;
+      }
+      setEdges(newEdges);
+
+      return [trigger, ...updatedActions];
+    });
   };
 
   const runWorkflow = async () => {
@@ -281,7 +388,7 @@ export default function App() {
           source: "ui_canvas_trigger",
           target_url: targetUrl,
           prompt: promptText,
-          destination_type: nodes.find(n => ["email", "slack", "sheets", "discord", "webhook_out"].includes(n.data?.actionType))?.data?.actionType || "email",
+          destination_type: nodes.find(n => ["email", "slack", "sheets"].includes(n.data?.actionType))?.data?.actionType || "email",
           recipient_email: recipientEmail,
           email_subject: emailSubject,
           slack_url: slackUrl,
@@ -352,7 +459,7 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => addAction("webhook_out")}
+              onClick={() => addAction("slack")}
               className="flex items-center gap-2 px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-medium text-slate-700 transition cursor-pointer"
             >
               <PlusCircle className="w-4 h-4 text-slate-600" />
@@ -377,6 +484,8 @@ export default function App() {
                 ...n,
                 data: {
                   ...n.data,
+                  totalActions: nodes.filter((x) => x.type === "actionNode").length,
+                  onMove: handleMoveNode,
                   isSelected: selectedNode?.id === n.id,
                   onSelect: () => {
                     if (n.id === "trigger") {
@@ -413,6 +522,8 @@ export default function App() {
             setPromptText={setPromptText}
             onDeleteNode={handleDeleteNode}
             onUpdateNode={handleUpdateNode}
+            onMoveNode={handleMoveNode}
+            totalActions={nodes.filter((n) => n.type === "actionNode").length}
             recipientEmail={recipientEmail}
             setRecipientEmail={setRecipientEmail}
             emailSubject={emailSubject}
@@ -421,10 +532,6 @@ export default function App() {
             setSheetWebhookUrl={setSheetWebhookUrl}
             slackUrl={slackUrl}
             setSlackUrl={setSlackUrl}
-            discordUrl={discordUrl}
-            setDiscordUrl={setDiscordUrl}
-            destinationUrl={destinationUrl}
-            setDestinationUrl={setDestinationUrl}
             backendUrl={BACKEND_URL}
           />
 

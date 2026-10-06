@@ -1,14 +1,12 @@
 import React, { useState } from "react";
-import { Settings, Trash2, Globe, Sparkles, MessageSquare, Table, Mail, Send, Copy, Check, Download, ExternalLink } from "lucide-react";
+import { Settings, Trash2, Globe, Sparkles, MessageSquare, Table, Mail, Copy, Check, Download, ArrowUp, ArrowDown } from "lucide-react";
 
 const ACTION_OPTIONS = [
   { value: "playwright", label: "Autonomous Browser Scraping (Playwright)", icon: Globe },
   { value: "gemini", label: "Gemini 2.5 Flash Synthesis (AI)", icon: Sparkles },
-  { value: "sheets", label: "Google Sheets / Excel Sync", icon: Table },
-  { value: "email", label: "Email Dispatch (SMTP / Resend)", icon: Mail },
   { value: "slack", label: "Slack Channel Notification", icon: MessageSquare },
-  { value: "discord", label: "Discord Webhook Alert", icon: Send },
-  { value: "webhook_out", label: "Dispatch Outbound Webhook", icon: Send },
+  { value: "sheets", label: "Google Sheets / Excel Sync", icon: Table },
+  { value: "email", label: "Email Dispatch (SMTP / Gmail)", icon: Mail },
 ];
 
 export function NodeConfigDrawer({
@@ -20,6 +18,8 @@ export function NodeConfigDrawer({
   setPromptText,
   onDeleteNode,
   onUpdateNode,
+  onMoveNode,
+  totalActions = 3,
   recipientEmail = "recoverybro23@gmail.com",
   setRecipientEmail,
   emailSubject = "[FlowPilot AI Alert] Autonomous Execution Report",
@@ -28,10 +28,6 @@ export function NodeConfigDrawer({
   setSheetWebhookUrl,
   slackUrl = "",
   setSlackUrl,
-  discordUrl = "",
-  setDiscordUrl,
-  destinationUrl = "",
-  setDestinationUrl,
   backendUrl = "http://localhost:8000"
 }) {
   const [copiedScript, setCopiedScript] = useState(false);
@@ -39,6 +35,7 @@ export function NodeConfigDrawer({
 
   const currentActionType = selectedNode.data?.actionType || "playwright";
   const isTrigger = selectedNode.id === "trigger";
+  const currentIndex = selectedNode.data?.index || 1;
 
   const handleActionTypeChange = (newType) => {
     if (onUpdateNode) {
@@ -50,6 +47,7 @@ export function NodeConfigDrawer({
     const script = `function doPost(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var data = JSON.parse(e.postData.contents);
+  if (data.secret !== "flowpilot_secret_123") return ContentService.createTextOutput("Forbidden");
   sheet.appendRow([new Date(), data.workflow_id, data.target_url, data.page_title, data.ai_summary]);
   return ContentService.createTextOutput("OK");
 }`;
@@ -71,6 +69,36 @@ export function NodeConfigDrawer({
       </div>
 
       <div className="py-4 space-y-4 flex-1">
+        {/* Step Re-ordering Control */}
+        {!isTrigger && (
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+              <span>Sequence: Step {currentIndex} of {totalActions}</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onMoveNode && onMoveNode(selectedNode.id, "up")}
+                  disabled={currentIndex <= 1}
+                  className="px-2 py-1 bg-white border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed rounded text-[11px] font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                >
+                  <ArrowUp className="w-3 h-3 text-slate-600" /> Move Up
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onMoveNode && onMoveNode(selectedNode.id, "down")}
+                  disabled={currentIndex >= totalActions}
+                  className="px-2 py-1 bg-white border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed rounded text-[11px] font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                >
+                  <ArrowDown className="w-3 h-3 text-slate-600" /> Move Down
+                </button>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400">
+              Rearrange the order of execution. Connected canvas nodes and green arrows will automatically re-link.
+            </p>
+          </div>
+        )}
+
         {/* Action Type Selector Dropdown */}
         {!isTrigger && (
           <div>
@@ -129,12 +157,29 @@ export function NodeConfigDrawer({
           </div>
         )}
 
+        {/* Real Slack Alert */}
+        {currentActionType === "slack" && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Slack Incoming Webhook URL</label>
+              <input
+                type="text"
+                value={slackUrl}
+                onChange={(e) => setSlackUrl && setSlackUrl(e.target.value)}
+                placeholder="https://hooks.slack.com/services/..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs font-mono text-slate-700 outline-none focus:border-orange-500"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">Posts rich Block Kit briefings with clean typography directly into your Slack channel.</p>
+            </div>
+          </div>
+        )}
+
         {/* Google Sheets / Excel Live Integration */}
         {currentActionType === "sheets" && (
           <div className="space-y-3.5">
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                Google Sheet Webhook URL (Optional for Cloud Sync)
+                Google Sheet Webhook URL
               </label>
               <input
                 type="text"
@@ -144,14 +189,14 @@ export function NodeConfigDrawer({
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs font-mono text-slate-800 outline-none focus:border-orange-500"
               />
               <p className="text-[10px] text-slate-400 mt-1">
-                Paste your Google Apps Script Webhook or Zapier/Make Webhook URL here to append rows in real-time.
+                Appends real rows live to your online Google Sheet.
               </p>
             </div>
 
             {/* Google Apps Script Quick Setup Box */}
             <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-2 text-[11px] text-emerald-950">
               <div className="flex items-center justify-between font-bold">
-                <span className="flex items-center gap-1">📊 Connect Real Google Sheet (30s)</span>
+                <span className="flex items-center gap-1">📊 Connect Real Google Sheet</span>
                 <button
                   type="button"
                   onClick={copyAppsScript}
@@ -162,19 +207,17 @@ export function NodeConfigDrawer({
                 </button>
               </div>
               <p className="text-[10px] text-emerald-800 leading-relaxed">
-                1. Open Google Sheet → <strong>Extensions → Apps Script</strong><br />
-                2. Paste script & click <strong>Deploy → New deployment → Web app</strong> (Access: Anyone)<br />
-                3. Paste the URL above!
+                Open Sheet → <strong>Extensions → Apps Script</strong> → Paste script & Deploy as Web app.
               </p>
             </div>
 
             {/* Local Live CSV Export */}
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
               <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                💾 Local Spreadsheet Engine
+                💾 Local Spreadsheet Backup
               </span>
               <p className="text-[10px] text-slate-500 leading-relaxed">
-                Every execution automatically appends rows to a live CSV table on disk (<code className="font-mono text-orange-600">flowpilot_sheets.csv</code>).
+                Every run is also saved to local CSV table (<code className="font-mono text-orange-600">flowpilot_sheets.csv</code>).
               </p>
               <a
                 href={`${backendUrl}/api/v1/export/sheets.csv`}
@@ -212,52 +255,6 @@ export function NodeConfigDrawer({
               />
             </div>
             <p className="text-[10px] text-slate-400">Uses configured SMTP in .env to deliver branded HTML digests straight to your inbox.</p>
-          </div>
-        )}
-
-        {/* Real Slack Alert */}
-        {currentActionType === "slack" && (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Slack Incoming Webhook URL</label>
-              <input
-                type="text"
-                value={slackUrl}
-                onChange={(e) => setSlackUrl && setSlackUrl(e.target.value)}
-                placeholder="https://hooks.slack.com/services/T00/B00/XXXX"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs font-mono text-slate-700 outline-none focus:border-orange-500"
-              />
-              <p className="text-[10px] text-slate-400 mt-1">Posts rich formatted alert blocks directly into your chosen Slack channel.</p>
-            </div>
-          </div>
-        )}
-
-        {/* Real Discord Alert */}
-        {currentActionType === "discord" && (
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">Discord Webhook URL</label>
-            <input
-              type="text"
-              value={discordUrl}
-              onChange={(e) => setDiscordUrl && setDiscordUrl(e.target.value)}
-              placeholder="https://discord.com/api/webhooks/12345/abcdef"
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs font-mono text-slate-700 outline-none focus:border-orange-500"
-            />
-            <p className="text-[10px] text-slate-400 mt-1">Dispatches structured embeds with color coding directly to your Discord channel.</p>
-          </div>
-        )}
-
-        {/* Outbound Webhook */}
-        {currentActionType === "webhook_out" && (
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">Destination Webhook URL</label>
-            <input
-              type="text"
-              value={destinationUrl}
-              onChange={(e) => setDestinationUrl && setDestinationUrl(e.target.value)}
-              placeholder="https://api.yourdomain.com/v1/ingest"
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs font-mono text-slate-700 outline-none focus:border-orange-500"
-            />
           </div>
         )}
       </div>

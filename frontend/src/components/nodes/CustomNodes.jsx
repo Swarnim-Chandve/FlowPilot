@@ -1,6 +1,6 @@
 import React from "react";
 import { Handle, Position } from "@xyflow/react";
-import { Play, Code, MessageSquare, Mail, Table, Send, Globe, Sparkles } from "lucide-react";
+import { Play, Code, MessageSquare, Mail, Table, Globe, Sparkles, ChevronUp, ChevronDown } from "lucide-react";
 
 export function TriggerNode({ data }) {
   return (
@@ -58,30 +58,16 @@ const ACTION_METADATA = {
     iconColor: "text-emerald-600"
   },
   email: {
-    title: "Email Dispatch (SMTP / Resend)",
+    title: "Email Dispatch (SMTP / Gmail)",
     tag: "EMAIL",
     tagStyle: "bg-blue-50 text-blue-700 border-blue-200",
     icon: Mail,
     iconColor: "text-blue-600"
-  },
-  discord: {
-    title: "Discord Webhook Alert",
-    tag: "DISCORD",
-    tagStyle: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    icon: Send,
-    iconColor: "text-indigo-600"
-  },
-  webhook_out: {
-    title: "Dispatch Outbound Webhook",
-    tag: "WEBHOOK_OUT",
-    tagStyle: "bg-amber-50 text-amber-700 border-amber-200",
-    icon: Send,
-    iconColor: "text-amber-600"
   }
 };
 
-export function ActionNode({ data }) {
-  const meta = ACTION_METADATA[data.actionType] || ACTION_METADATA.webhook_out;
+export function ActionNode({ id, data }) {
+  const meta = ACTION_METADATA[data.actionType] || ACTION_METADATA.slack;
   const IconComponent = meta.icon;
 
   return (
@@ -94,7 +80,34 @@ export function ActionNode({ data }) {
         <div className="flex items-center gap-2">
           <IconComponent className={`w-3.5 h-3.5 ${meta.iconColor}`} />
           <span className="font-semibold text-xs text-slate-700">Action {data.index || 1}</span>
+          
+          {/* Quick Rearrange Buttons on Node Header */}
+          <div className="flex items-center gap-0.5 ml-1">
+            <button
+              title="Move Step Up"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (data.onMove) data.onMove(id, "up");
+              }}
+              disabled={data.index <= 1}
+              className="p-0.5 hover:bg-slate-200 disabled:opacity-20 rounded text-slate-500 hover:text-slate-800 cursor-pointer"
+            >
+              <ChevronUp className="w-3 h-3" />
+            </button>
+            <button
+              title="Move Step Down"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (data.onMove) data.onMove(id, "down");
+              }}
+              disabled={Boolean(data.totalActions && data.index >= data.totalActions)}
+              className="p-0.5 hover:bg-slate-200 disabled:opacity-20 rounded text-slate-500 hover:text-slate-800 cursor-pointer"
+            >
+              <ChevronDown className="w-3 h-3" />
+            </button>
+          </div>
         </div>
+
         <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border ${meta.tagStyle}`}>
           {meta.tag}
         </span>

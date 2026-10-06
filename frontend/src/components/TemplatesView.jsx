@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Globe, Sparkles, MessageSquare, Mail, Table, Send } from "lucide-react";
+import { Globe, Sparkles, MessageSquare, Mail, Table } from "lucide-react";
 
 const STARTER_TEMPLATES = [
   {
     id: "tpl_hn_slack",
     title: "HackerNews Market Intel → Slack Alert",
     category: "Market Intel",
-    description: "Scrapes HackerNews front-page discussions, synthesizes sentiment with Gemini 2.5, and dispatches rich alerts to Slack.",
+    description: "Scrapes HackerNews front-page discussions, synthesizes sentiment with Gemini 2.5, and dispatches rich Block Kit alerts directly to Slack.",
     targetUrl: "https://news.ycombinator.com",
     promptText: "Summarize top 2 trending stories, tech shifts, and key sentiment.",
     destination: "slack",
@@ -18,7 +18,7 @@ const STARTER_TEMPLATES = [
     id: "tpl_pricing_sheets",
     title: "Competitor SaaS Pricing Watcher → Google Sheets",
     category: "Competitive Analysis",
-    description: "Monitors competitor pricing pages using headless Playwright, extracts tier changes, and appends rows to Google Sheets / Excel.",
+    description: "Monitors competitor pricing pages using headless Playwright, extracts tier changes, and appends rows live to your online Google Sheet.",
     targetUrl: "https://stripe.com/pricing",
     promptText: "Extract all public pricing tiers, transaction fees, and feature differentiators.",
     destination: "sheets",
@@ -30,37 +30,37 @@ const STARTER_TEMPLATES = [
     id: "tpl_blog_email",
     title: "Executive Essay Scraper → Email Digest",
     category: "AI Research",
-    description: "Extracts long-form essays, runs deep thesis extraction, and formats a clean executive briefing sent directly to email.",
+    description: "Extracts long-form essays, runs deep thesis extraction, and formats a clean executive briefing delivered straight to your Gmail inbox.",
     targetUrl: "https://paulgraham.com/articles.html",
     promptText: "Extract core thesis, contrarian perspectives, and top 3 actionable takeaways.",
     destination: "email",
-    destLabel: "Email Dispatch (SMTP/Resend)",
+    destLabel: "Email Dispatch (SMTP/Gmail)",
     destIcon: Mail,
     destColor: "text-blue-600 bg-blue-50 border-blue-200"
   },
   {
-    id: "tpl_github_discord",
-    title: "GitHub CVE & Release Notes → Discord Bot",
-    category: "DevSecOps",
-    description: "Fetches critical repository release notes, flags breaking changes with AI, and notifies development channels on Discord.",
-    targetUrl: "https://github.com/fastapi/fastapi/releases",
-    promptText: "Identify breaking changes, security advisories, and newly introduced features.",
-    destination: "discord",
-    destLabel: "Discord Webhook Alert",
-    destIcon: Send,
-    destColor: "text-indigo-600 bg-indigo-50 border-indigo-200"
+    id: "tpl_techcrunch_slack",
+    title: "TechCrunch Breaking Startup Intel → Slack",
+    category: "Venture Capital",
+    description: "Monitors breaking funding announcements and startup launches, compiling actionable founder intel posted directly into Slack.",
+    targetUrl: "https://techcrunch.com",
+    promptText: "Summarize top 2 breaking startup funding rounds, valuations, and market impact.",
+    destination: "slack",
+    destLabel: "Slack Channel Alert",
+    destIcon: MessageSquare,
+    destColor: "text-fuchsia-600 bg-fuchsia-50 border-fuchsia-200"
   },
   {
-    id: "tpl_job_webhook",
-    title: "YC AI Engineer Jobs → Zapier Webhook",
+    id: "tpl_yc_jobs_sheets",
+    title: "YC AI Engineer Jobs Extractor → Google Sheets",
     category: "Lead Gen",
-    description: "Extracts active AI/ML engineer job postings from startup boards and pipes structured JSON to an outbound webhook / Zapier.",
+    description: "Extracts active AI/ML engineer roles from startup boards and automatically logs hiring companies, salaries, and tech stacks into Google Sheets.",
     targetUrl: "https://www.ycombinator.com/jobs",
-    promptText: "Extract AI/ML engineering roles, required tech stacks, and compensation ranges.",
-    destination: "webhook_out",
-    destLabel: "Outbound Webhook / Zapier",
-    destIcon: Send,
-    destColor: "text-amber-600 bg-amber-50 border-amber-200"
+    promptText: "Extract 3 active AI/ML engineering roles, required tech stacks, and locations.",
+    destination: "sheets",
+    destLabel: "Google Sheets Sync",
+    destIcon: Table,
+    destColor: "text-emerald-600 bg-emerald-50 border-emerald-200"
   }
 ];
 
